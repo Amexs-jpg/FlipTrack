@@ -1,708 +1,534 @@
-import { useState, useMemo } from "react";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FlipTrack — Gestionnaire de revente</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0ede8;min-height:100vh}
+.app{max-width:520px;margin:0 auto;background:#fff;min-height:100vh}
+input,select{width:100%;padding:9px 12px;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:14px;background:#fff;color:#111;font-family:inherit;outline:none;transition:border 0.15s,box-shadow 0.15s}
+input:focus,select:focus{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,0.15)}
+button{font-family:inherit;cursor:pointer;transition:background 0.12s,opacity 0.12s}
+button:disabled{opacity:0.4;cursor:not-allowed}
+a{color:inherit;text-decoration:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
 
 const CATEGORIES = ["Électronique","Vêtements","Sneakers","Jeux vidéo","Sacs","Livres / BD","Sport","Autre"];
 const PLATFORMS_LIST = ["LeBonCoin","Vinted","eBay","Back Market","Vestiaire Collective","StockX","Momox"];
 const FEES = {"Back Market":9,"eBay":8,"LeBonCoin":0,"Vinted":0,"Vestiaire Collective":12,"StockX":9,"Momox":0};
 
 const SITES = [
-  {
-    name:"LeBonCoin", url:"https://www.leboncoin.fr", fee:0, color:"#F05C00",
-    desc:"Le généraliste français numéro 1. Idéal pour tout type d'article, surtout le gros volume.",
-    cats:["Électronique","Jeux vidéo","Sport","Livres / BD","Autre"],
-    tip:"Publie le matin entre 8h et 10h pour maximiser la visibilité.",
-  },
-  {
-    name:"Vinted", url:"https://www.vinted.fr", fee:0, color:"#007782",
-    desc:"Zéro frais vendeur. La plateforme reine pour les vêtements, sneakers et accessoires.",
-    cats:["Vêtements","Sneakers","Sacs"],
-    tip:"Des photos sur fond blanc et une description détaillée font toute la différence.",
-  },
-  {
-    name:"eBay", url:"https://www.ebay.fr", fee:8, color:"#E53238",
-    desc:"Audience internationale massive. Le meilleur pour les articles rares ou collectors.",
-    cats:["Électronique","Jeux vidéo","Sneakers","Livres / BD"],
-    tip:"Commence à 1€ en enchères pour générer de l'engouement sur les articles rares.",
-  },
-  {
-    name:"Back Market", url:"https://www.backmarket.fr", fee:9, color:"#1A1A1A",
-    desc:"Spécialisé reconditionnement. Acheteurs sérieux, prix premium pour le high-tech en bon état.",
-    cats:["Électronique"],
-    tip:"Sois honnête sur l'état — les acheteurs ici sont exigeants et laissent des avis.",
-  },
-  {
-    name:"Vestiaire Collective", url:"https://www.vestiairecollective.com", fee:12, color:"#8B6914",
-    desc:"Le marché du luxe d'occasion. Réservé aux grandes marques (Chanel, LV, Gucci...).",
-    cats:["Vêtements","Sacs","Sneakers"],
-    tip:"Fais authentifier ton article pour rassurer les acheteurs et vendre plus vite.",
-  },
-  {
-    name:"StockX", url:"https://stockx.com", fee:9, color:"#00B100",
-    desc:"La bourse des sneakers et streetwear. Prix fixés par le marché, transactions sécurisées.",
-    cats:["Sneakers","Vêtements"],
-    tip:"Vérifie le prix du marché avant d'acheter — StockX te dit exactement à combien tu peux revendre.",
-  },
-  {
-    name:"Momox", url:"https://www.momox.fr", fee:0, color:"#FF6600",
-    desc:"Rachat direct instantané de livres, CD, jeux vidéo. Idéal pour vider un stock vite.",
-    cats:["Livres / BD","Jeux vidéo"],
-    tip:"Scanne les codes-barres directement dans l'app pour obtenir une offre en 2 secondes.",
-  },
-  {
-    name:"Vide Greniers Online", url:"https://www.videdressing.com", fee:10, color:"#C0392B",
-    desc:"Plateforme française mode premium. Acheteurs à fort pouvoir d'achat.",
-    cats:["Vêtements","Sacs"],
-    tip:"Mise sur des photos de qualité et des descriptions précises avec les mesures.",
-  },
+  {name:"LeBonCoin",url:"https://www.leboncoin.fr",fee:0,color:"#F05C00",desc:"Le généraliste français numéro 1. Idéal pour tout type d'article.",cats:["Électronique","Jeux vidéo","Sport","Livres / BD","Autre"],tip:"Publie le matin entre 8h et 10h pour maximiser la visibilité."},
+  {name:"Vinted",url:"https://www.vinted.fr",fee:0,color:"#007782",desc:"Zéro frais vendeur. La plateforme reine pour les vêtements et accessoires.",cats:["Vêtements","Sneakers","Sacs"],tip:"Des photos sur fond blanc et une description détaillée font toute la différence."},
+  {name:"eBay",url:"https://www.ebay.fr",fee:8,color:"#E53238",desc:"Audience internationale massive. Le meilleur pour les articles rares ou collectors.",cats:["Électronique","Jeux vidéo","Sneakers","Livres / BD"],tip:"Commence à 1€ en enchères pour générer de l'engouement sur les articles rares."},
+  {name:"Back Market",url:"https://www.backmarket.fr",fee:9,color:"#1A1A1A",desc:"Spécialisé reconditionnement. Acheteurs sérieux, prix premium pour le high-tech.",cats:["Électronique"],tip:"Sois honnête sur l'état — les acheteurs ici sont exigeants et laissent des avis."},
+  {name:"Vestiaire Collective",url:"https://www.vestiairecollective.com",fee:12,color:"#8B6914",desc:"Le marché du luxe d'occasion. Réservé aux grandes marques (Chanel, LV, Gucci...).",cats:["Vêtements","Sacs","Sneakers"],tip:"Fais authentifier ton article pour rassurer les acheteurs et vendre plus vite."},
+  {name:"StockX",url:"https://stockx.com",fee:9,color:"#00B100",desc:"La bourse des sneakers et streetwear. Prix fixés par le marché, transactions sécurisées.",cats:["Sneakers","Vêtements"],tip:"Vérifie le prix du marché avant d'acheter — StockX te dit exactement à combien tu peux revendre."},
+  {name:"Momox",url:"https://www.momox.fr",fee:0,color:"#FF6600",desc:"Rachat direct instantané de livres, CD, jeux vidéo. Idéal pour vider un stock vite.",cats:["Livres / BD","Jeux vidéo"],tip:"Scanne les codes-barres dans l'app pour obtenir une offre en 2 secondes."},
+  {name:"Vide Dressing",url:"https://www.videdressing.com",fee:10,color:"#C0392B",desc:"Plateforme française mode premium. Acheteurs à fort pouvoir d'achat.",cats:["Vêtements","Sacs"],tip:"Mise sur des photos de qualité et des descriptions précises avec les mesures."},
 ];
 
 const GUIDE = {
-  "Électronique":[
-    {n:"LeBonCoin",f:0,best:true,t:"Meilleure audience en France. 0% de frais = tu gardes tout."},
-    {n:"Back Market",f:9,best:false,t:"Idéal si ton produit est reconditionné ou en très bon état."},
-    {n:"eBay",f:8,best:false,t:"Parfait pour les pièces rares ou recherchées à l'international."},
-  ],
-  "Vêtements":[
-    {n:"Vinted",f:0,best:true,t:"Numéro 1 en France pour les vêtements. Zéro frais vendeur."},
-    {n:"LeBonCoin",f:0,best:false,t:"Bon pour les lots ou les grandes tailles."},
-    {n:"Vestiaire Collective",f:12,best:false,t:"Uniquement pour les marques premium (Gucci, Chanel...)."},
-  ],
-  "Sneakers":[
-    {n:"StockX",f:9,best:true,t:"Référence mondiale pour les sneakers hypées. Prix fixés par le marché."},
-    {n:"Vinted",f:0,best:false,t:"Très bien pour les sneakers lifestyle sans payer de frais."},
-    {n:"eBay",f:8,best:false,t:"Bonne option pour les modèles rares ou vintage."},
-  ],
-  "Jeux vidéo":[
-    {n:"LeBonCoin",f:0,best:true,t:"0% de frais, forte demande locale pour les jeux et consoles."},
-    {n:"Vinted",f:0,best:false,t:"Efficace pour les jeux récents courants (Switch, PS5...)."},
-    {n:"eBay",f:8,best:false,t:"Indispensable pour les jeux rares, imports ou collectors."},
-  ],
-  "Sacs":[
-    {n:"Vinted",f:0,best:true,t:"Meilleur pour les sacs de marques courantes. Zéro frais."},
-    {n:"Vestiaire Collective",f:12,best:false,t:"Pour les sacs de luxe (LV, Chanel...) — acheteurs premium."},
-    {n:"LeBonCoin",f:0,best:false,t:"Alternative locale sans frais, bon pour les sacs du quotidien."},
-  ],
-  "Livres / BD":[
-    {n:"LeBonCoin",f:0,best:true,t:"Parfait pour les BD et romans courants. Zéro frais."},
-    {n:"Momox",f:0,best:false,t:"Rachat direct instantané — pratique pour vider un stock vite."},
-    {n:"eBay",f:8,best:false,t:"Réservé aux éditions rares ou dédicacées avec valeur collectible."},
-  ],
-  "Sport":[
-    {n:"LeBonCoin",f:0,best:true,t:"Numéro 1 pour le matériel sportif en France. 0% de frais."},
-    {n:"Vinted",f:0,best:false,t:"Très efficace pour les vêtements de sport de marque."},
-    {n:"eBay",f:8,best:false,t:"Bon pour les équipements spécialisés ou de niche."},
-  ],
-  "Autre":[
-    {n:"LeBonCoin",f:0,best:true,t:"0% de frais et la plus grande audience généraliste en France."},
-    {n:"Vinted",f:0,best:false,t:"En forte croissance sur la déco et les objets du quotidien."},
-    {n:"eBay",f:8,best:false,t:"À privilégier si ton objet intéresse une audience internationale."},
-  ],
+  "Électronique":[{n:"LeBonCoin",f:0,best:true,t:"Meilleure audience en France. 0% de frais = tu gardes tout."},{n:"Back Market",f:9,best:false,t:"Idéal si ton produit est reconditionné ou en très bon état."},{n:"eBay",f:8,best:false,t:"Parfait pour les pièces rares ou recherchées à l'international."}],
+  "Vêtements":[{n:"Vinted",f:0,best:true,t:"Numéro 1 en France pour les vêtements. Zéro frais vendeur."},{n:"LeBonCoin",f:0,best:false,t:"Bon pour les lots ou les grandes tailles."},{n:"Vestiaire Collective",f:12,best:false,t:"Uniquement pour les marques premium (Gucci, Chanel...)."}],
+  "Sneakers":[{n:"StockX",f:9,best:true,t:"Référence mondiale pour les sneakers hypées. Prix fixés par le marché."},{n:"Vinted",f:0,best:false,t:"Très bien pour les sneakers lifestyle sans payer de frais."},{n:"eBay",f:8,best:false,t:"Bonne option pour les modèles rares ou vintage."}],
+  "Jeux vidéo":[{n:"LeBonCoin",f:0,best:true,t:"0% de frais, forte demande locale pour les jeux et consoles."},{n:"Vinted",f:0,best:false,t:"Efficace pour les jeux récents courants (Switch, PS5...)."},{n:"eBay",f:8,best:false,t:"Indispensable pour les jeux rares, imports ou collectors."}],
+  "Sacs":[{n:"Vinted",f:0,best:true,t:"Meilleur pour les sacs de marques courantes. Zéro frais."},{n:"Vestiaire Collective",f:12,best:false,t:"Pour les sacs de luxe (LV, Chanel...) — acheteurs premium."},{n:"LeBonCoin",f:0,best:false,t:"Alternative locale sans frais, bon pour les sacs du quotidien."}],
+  "Livres / BD":[{n:"LeBonCoin",f:0,best:true,t:"Parfait pour les BD et romans courants. Zéro frais."},{n:"Momox",f:0,best:false,t:"Rachat direct instantané — pratique pour vider un stock vite."},{n:"eBay",f:8,best:false,t:"Réservé aux éditions rares ou dédicacées avec valeur collectible."}],
+  "Sport":[{n:"LeBonCoin",f:0,best:true,t:"Numéro 1 pour le matériel sportif en France. 0% de frais."},{n:"Vinted",f:0,best:false,t:"Très efficace pour les vêtements de sport de marque."},{n:"eBay",f:8,best:false,t:"Bon pour les équipements spécialisés ou de niche."}],
+  "Autre":[{n:"LeBonCoin",f:0,best:true,t:"0% de frais et la plus grande audience généraliste en France."},{n:"Vinted",f:0,best:false,t:"En forte croissance sur la déco et les objets du quotidien."},{n:"eBay",f:8,best:false,t:"À privilégier si ton objet intéresse une audience internationale."}],
 };
-
-function eur(n) {
-  return new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:2}).format(n||0);
-}
 
 const C = {
-  bg:"#fff", bgSec:"#f5f4f0", bgAmber:"#FAEEDA", bgGreen:"#E1F5EE", bgBlue:"#E6F1FB", bgRed:"#FCEBEB",
-  textPri:"#111", textSec:"#666", textTer:"#999",
-  green:"#0F6E56", greenDark:"#085041", greenLight:"#3B6D11",
-  amber:"#633806", amberMid:"#854F0B", amberLight:"#BA7517",
-  blue:"#0C447C", red:"#A32D2D",
-  border:"rgba(0,0,0,0.1)", borderMed:"rgba(0,0,0,0.18)",
+  bg:"#fff",bgSec:"#f5f4f0",bgAmber:"#FAEEDA",bgGreen:"#E1F5EE",bgBlue:"#E6F1FB",bgRed:"#FCEBEB",
+  textPri:"#111",textSec:"#666",textTer:"#999",
+  green:"#0F6E56",greenDark:"#085041",greenLight:"#3B6D11",
+  amber:"#633806",amberMid:"#854F0B",amberLight:"#BA7517",
+  blue:"#0C447C",red:"#A32D2D",
+  border:"rgba(0,0,0,0.1)",borderMed:"rgba(0,0,0,0.18)",
 };
+const inp = {width:"100%",padding:"9px 12px",border:"0.5px solid rgba(0,0,0,0.2)",borderRadius:8,fontSize:14,background:C.bg,color:C.textPri,fontFamily:"inherit",outline:"none"};
+const sel = {...inp,fontSize:13};
 
-const inp = { width:"100%", padding:"9px 12px", border:"0.5px solid "+C.borderMed, borderRadius:8, fontSize:14, background:C.bg, color:C.textPri, fontFamily:"inherit", outline:"none" };
-const sel = { ...inp, fontSize:13 };
+function eur(n){return new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:2}).format(n||0);}
 
-function Badge({ children, variant }) {
-  const map = {
-    vendu:{ background:C.bgGreen, color:C.greenDark },
-    stock:{ background:C.bgAmber, color:C.amber },
-    info:{ background:C.bgBlue, color:C.blue },
-    red:{ background:C.bgRed, color:C.red },
-  };
-  const s = map[variant] || map.vendu;
-  return <span style={{ fontSize:11, fontWeight:500, padding:"3px 10px", borderRadius:20, display:"inline-block", lineHeight:1.6, ...s }}>{children}</span>;
+function Badge({children,variant}){
+  const map={vendu:{background:C.bgGreen,color:C.greenDark},stock:{background:C.bgAmber,color:C.amber},info:{background:C.bgBlue,color:C.blue},red:{background:C.bgRed,color:C.red}};
+  const s=map[variant]||map.vendu;
+  return <span style={{fontSize:11,fontWeight:500,padding:"3px 10px",borderRadius:20,display:"inline-block",lineHeight:1.6,...s}}>{children}</span>;
 }
 
-function Label({ children, action }) {
-  return (
-    <div style={{ display:"flex", alignItems:"center", margin:"20px 0 10px" }}>
-      <span style={{ fontSize:11, fontWeight:500, color:C.textTer, letterSpacing:"0.06em", textTransform:"uppercase" }}>{children}</span>
-      {action && <div style={{ marginLeft:"auto" }}>{action}</div>}
+function Label({children,action}){
+  return(
+    <div style={{display:"flex",alignItems:"center",margin:"20px 0 10px"}}>
+      <span style={{fontSize:11,fontWeight:500,color:C.textTer,letterSpacing:"0.06em",textTransform:"uppercase"}}>{children}</span>
+      {action&&<div style={{marginLeft:"auto"}}>{action}</div>}
     </div>
   );
 }
 
-function Btn({ children, onClick, full, disabled, danger, small, style:x }) {
-  return (
+function Btn({children,onClick,full,disabled,danger,small,style:x={}}){
+  return(
     <button onClick={onClick} disabled={disabled} style={{
-      width: full ? "100%" : undefined,
-      padding: small ? "4px 10px" : full ? "10px" : "8px 14px",
-      border: danger ? "0.5px solid "+C.red : "0.5px solid "+C.borderMed,
-      borderRadius:8, background:"transparent",
-      color: danger ? C.red : C.textPri,
-      fontSize: small ? 12 : 13,
-      cursor: disabled ? "not-allowed" : "pointer",
-      opacity: disabled ? 0.4 : 1,
-      fontFamily:"inherit", ...x
+      width:full?"100%":undefined,padding:small?"5px 11px":full?"10px":"8px 14px",
+      border:danger?"0.5px solid "+C.red:"0.5px solid rgba(0,0,0,0.18)",
+      borderRadius:8,background:"transparent",color:danger?C.red:C.textPri,
+      fontSize:small?12:13,cursor:disabled?"not-allowed":"pointer",
+      opacity:disabled?0.4:1,fontFamily:"inherit",...x
     }}>{children}</button>
   );
 }
 
-function Field({ label, children }) {
-  return (
-    <div style={{ marginBottom:8 }}>
-      <p style={{ fontSize:12, color:C.textSec, marginBottom:4 }}>{label}</p>
+function Field({label,children}){
+  return(
+    <div style={{marginBottom:8}}>
+      <p style={{fontSize:12,color:C.textSec,marginBottom:4}}>{label}</p>
       {children}
     </div>
   );
 }
 
-function EmptyState({ title, desc, onAction, actionLabel }) {
-  return (
-    <div style={{ textAlign:"center", padding:"32px 20px", background:C.bgSec, borderRadius:12, border:"0.5px dashed "+C.borderMed }}>
-      <div style={{ width:44, height:44, borderRadius:"50%", background:C.bg, border:"0.5px solid "+C.border, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+function EmptyState({title,desc,onAction,actionLabel}){
+  return(
+    <div style={{textAlign:"center",padding:"32px 20px",background:C.bgSec,borderRadius:12,border:"0.5px dashed rgba(0,0,0,0.18)"}}>
+      <div style={{width:44,height:44,borderRadius:"50%",background:C.bg,border:"0.5px solid "+C.border,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="3" stroke="#888" strokeWidth="1.3" fill="none"/><path d="M7 10h6M10 7v6" stroke="#888" strokeWidth="1.3" strokeLinecap="round"/></svg>
       </div>
-      <p style={{ fontSize:14, fontWeight:500, color:C.textPri, marginBottom:6 }}>{title}</p>
-      <p style={{ fontSize:13, color:C.textSec, lineHeight:1.6, marginBottom:16 }}>{desc}</p>
-      {onAction && <Btn onClick={onAction}>{actionLabel}</Btn>}
+      <p style={{fontSize:14,fontWeight:500,color:C.textPri,marginBottom:6}}>{title}</p>
+      <p style={{fontSize:13,color:C.textSec,lineHeight:1.6,marginBottom:16}}>{desc}</p>
+      {onAction&&<Btn onClick={onAction}>{actionLabel}</Btn>}
     </div>
   );
 }
 
-export default function FlipTrack() {
-  const [tab, setTab] = useState("dashboard");
-  const [items, setItems] = useState([]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [sellTarget, setSellTarget] = useState(null);
-  const [sellPrice, setSellPrice] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [guideCat, setGuideCat] = useState("Électronique");
-  const [siteFilter, setSiteFilter] = useState("Tous");
-  const [form, setForm] = useState({ name:"", category:"Électronique", buyPrice:"", platform:"LeBonCoin" });
-  const [estForm, setEstForm] = useState({ name:"", category:"Électronique", buyPrice:"" });
-  const [estResult, setEstResult] = useState(null);
-  const [estLoading, setEstLoading] = useState(false);
+function App(){
+  const [tab,setTab]=useState("dashboard");
+  const [items,setItems]=useState([]);
+  const [showAdd,setShowAdd]=useState(false);
+  const [sellTarget,setSellTarget]=useState(null);
+  const [sellPrice,setSellPrice]=useState("");
+  const [deleteConfirm,setDeleteConfirm]=useState(null);
+  const [guideCat,setGuideCat]=useState("Électronique");
+  const [siteFilter,setSiteFilter]=useState("Tous");
+  const [form,setForm]=useState({name:"",category:"Électronique",buyPrice:"",platform:"LeBonCoin"});
+  const [estForm,setEstForm]=useState({name:"",category:"Électronique",buyPrice:""});
+  const [estResult,setEstResult]=useState(null);
+  const [estLoading,setEstLoading]=useState(false);
 
-  const stats = useMemo(() => {
-    const sold = items.filter(i => i.status === "vendu");
-    const inStock = items.filter(i => i.status === "stock");
-    return {
-      profit: sold.reduce((a,i) => a + ((i.sellPrice||0) - i.buyPrice), 0),
-      revenue: sold.reduce((a,i) => a + (i.sellPrice||0), 0),
-      invested: inStock.reduce((a,i) => a + i.buyPrice, 0),
-      totalSpent: items.reduce((a,i) => a + i.buyPrice, 0),
-      inStock: inStock.length,
-      soldCount: sold.length,
+  const stats=useMemo(()=>{
+    const sold=items.filter(i=>i.status==="vendu");
+    const inStock=items.filter(i=>i.status==="stock");
+    return{
+      profit:sold.reduce((a,i)=>a+((i.sellPrice||0)-i.buyPrice),0),
+      revenue:sold.reduce((a,i)=>a+(i.sellPrice||0),0),
+      invested:inStock.reduce((a,i)=>a+i.buyPrice,0),
+      totalSpent:items.reduce((a,i)=>a+i.buyPrice,0),
+      inStock:inStock.length,soldCount:sold.length,
     };
-  }, [items]);
+  },[items]);
 
-  function addItem() {
-    if (!form.name || !form.buyPrice) return;
-    const d = new Date();
-    const date = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
-    setItems(p => [...p, { id:Date.now(), name:form.name, category:form.category, buyPrice:parseFloat(form.buyPrice), sellPrice:null, platform:form.platform, status:"stock", date }]);
-    setForm({ name:"", category:"Électronique", buyPrice:"", platform:"LeBonCoin" });
-    setShowAdd(false);
-    setTab("stock");
+  function addItem(){
+    if(!form.name||!form.buyPrice)return;
+    const d=new Date();
+    const date=`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    setItems(p=>[...p,{id:Date.now(),name:form.name,category:form.category,buyPrice:parseFloat(form.buyPrice),sellPrice:null,platform:form.platform,status:"stock",date}]);
+    setForm({name:"",category:"Électronique",buyPrice:"",platform:"LeBonCoin"});
+    setShowAdd(false);setTab("stock");
   }
 
-  function confirmSell() {
-    const price = parseFloat(sellPrice);
-    if (!price || !sellTarget) return;
-    setItems(p => p.map(i => i.id === sellTarget ? { ...i, status:"vendu", sellPrice:price } : i));
-    setSellTarget(null);
-    setSellPrice("");
+  function confirmSell(){
+    const price=parseFloat(sellPrice);
+    if(!price||!sellTarget)return;
+    setItems(p=>p.map(i=>i.id===sellTarget?{...i,status:"vendu",sellPrice:price}:i));
+    setSellTarget(null);setSellPrice("");
   }
 
-  function deleteItem(id) {
-    setItems(p => p.filter(i => i.id !== id));
+  function deleteItem(id){
+    setItems(p=>p.filter(i=>i.id!==id));
     setDeleteConfirm(null);
-    if (sellTarget === id) setSellTarget(null);
+    if(sellTarget===id)setSellTarget(null);
   }
 
-  async function runEstimator() {
-    if (!estForm.name || !estForm.buyPrice) return;
-    setEstLoading(true);
-    setEstResult(null);
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 600,
-          system: "Tu es expert en rachat-revente en France. Réponds UNIQUEMENT en JSON valide, sans markdown ni texte autour.",
-          messages: [{
-            role: "user",
-            content: `Produit: "${estForm.name}" (${estForm.category}), acheté ${estForm.buyPrice}€. Estime le marché d'occasion français. JSON: {"prix_bas":<n>,"prix_haut":<n>,"plateforme":"<s>","marge":<n>,"achat_max":<n>,"conseil":"<s 1-2 phrases>"}`
-          }]
+  async function runEstimator(){
+    if(!estForm.name||!estForm.buyPrice)return;
+    setEstLoading(true);setEstResult(null);
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",max_tokens:600,
+          system:"Tu es expert en rachat-revente en France. Réponds UNIQUEMENT en JSON valide, sans markdown ni texte autour.",
+          messages:[{role:"user",content:`Produit: "${estForm.name}" (${estForm.category}), acheté ${estForm.buyPrice}€. JSON: {"prix_bas":<n>,"prix_haut":<n>,"plateforme":"<s>","marge":<n>,"achat_max":<n>,"conseil":"<s>"}`}]
         })
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const raw = data.content.map(b => b.text || "").join("");
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error("Réponse invalide");
+      const data=await res.json();
+      if(data.error)throw new Error(data.error.message);
+      const raw=data.content.map(b=>b.text||"").join("");
+      const match=raw.match(/\{[\s\S]*\}/);
+      if(!match)throw new Error("Réponse invalide");
       setEstResult(JSON.parse(match[0]));
-    } catch(e) {
-      setEstResult({ error: true, msg: e.message });
-    }
+    }catch(e){setEstResult({error:true,msg:e.message});}
     setEstLoading(false);
   }
 
-  const tabs = [
-    { id:"dashboard",   label:"Tableau",
-      icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".15"/></svg> },
-    { id:"stock",       label:"Articles",
-      icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
-    { id:"estimateur",  label:"Estimer",
-      icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><path d="M8 5v3l2 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-    { id:"plateformes", label:"Sites",
-      icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><path d="M8 2.5C6 2.5 4.5 5 4.5 8S6 13.5 8 13.5 11.5 11 11.5 8 10 2.5 8 2.5z" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 8h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
-    { id:"guide",       label:"Guide",
-      icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
+  const siteCats=["Tous",...CATEGORIES];
+  const filteredSites=siteFilter==="Tous"?SITES:SITES.filter(s=>s.cats.includes(siteFilter));
+
+  const tabs=[
+    {id:"dashboard",label:"Tableau",icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".15"/></svg>},
+    {id:"stock",label:"Articles",icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>},
+    {id:"estimateur",label:"Estimer",icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><path d="M8 5v3l2 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>},
+    {id:"plateformes",label:"Sites",icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><path d="M8 2.5C6.3 2.5 5 5 5 8s1.3 5.5 3 5.5S11 11 11 8 9.7 2.5 8 2.5z" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 8h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>},
+    {id:"guide",label:"Guide",icon:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>},
   ];
 
-  const siteCats = ["Tous", ...CATEGORIES];
-  const filteredSites = siteFilter === "Tous" ? SITES : SITES.filter(s => s.cats.includes(siteFilter));
+  return(
+    <div style={{fontFamily:"system-ui,-apple-system,sans-serif",background:C.bgSec,minHeight:"100vh"}}>
+    <div className="app">
 
-  return (
-    <div style={{ fontFamily:"system-ui,-apple-system,sans-serif", background:C.bgSec, minHeight:"100vh" }}>
-      <div style={{ maxWidth:520, margin:"0 auto", background:C.bg, minHeight:"100vh" }}>
-
-        {/* ── Header ── */}
-        <div style={{ padding:"18px 16px 14px", borderBottom:"0.5px solid "+C.border, display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:38, height:38, borderRadius:10, background:C.bgAmber, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="4" width="16" height="11" rx="2.5" fill="#EF9F27"/>
-              <rect x="2" y="4" width="16" height="5" rx="2.5" fill="#633806"/>
-              <rect x="7" y="14" width="6" height="2" rx="1" fill="#EF9F27"/>
-              <rect x="5" y="15.5" width="10" height="1.5" rx=".75" fill="#BA7517"/>
-            </svg>
-          </div>
-          <div>
-            <p style={{ fontWeight:500, fontSize:17, color:C.textPri, lineHeight:1.2 }}>FlipTrack</p>
-            <p style={{ fontSize:11, color:C.textTer }}>Ton gestionnaire de revente</p>
-          </div>
-          <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6, background:C.bgGreen, padding:"5px 10px", borderRadius:20 }}>
-            <div style={{ width:6, height:6, borderRadius:"50%", background:"#1D9E75" }}></div>
-            <span style={{ fontSize:12, color:C.greenDark, fontWeight:500 }}>{stats.inStock} en stock</span>
-          </div>
+      {/* Header */}
+      <div style={{padding:"18px 16px 14px",borderBottom:"0.5px solid "+C.border,display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:38,height:38,borderRadius:10,background:C.bgAmber,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="4" width="16" height="11" rx="2.5" fill="#EF9F27"/>
+            <rect x="2" y="4" width="16" height="5" rx="2.5" fill="#633806"/>
+            <rect x="7" y="14" width="6" height="2" rx="1" fill="#EF9F27"/>
+            <rect x="5" y="15.5" width="10" height="1.5" rx=".75" fill="#BA7517"/>
+          </svg>
         </div>
-
-        {/* ── Nav ── */}
-        <div style={{ display:"flex", gap:2, padding:"8px 10px", borderBottom:"0.5px solid "+C.border }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"8px 2px", borderRadius:8, border:"none", background: tab===t.id ? C.bgSec : "transparent", color: tab===t.id ? C.textPri : C.textTer, fontSize:10, fontWeight: tab===t.id ? 500 : 400, cursor:"pointer", fontFamily:"inherit" }}>
-              {t.icon}{t.label}
-            </button>
-          ))}
+        <div>
+          <p style={{fontWeight:500,fontSize:17,color:C.textPri,lineHeight:1.2}}>FlipTrack</p>
+          <p style={{fontSize:11,color:C.textTer}}>Ton gestionnaire de revente</p>
         </div>
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6,background:C.bgGreen,padding:"5px 10px",borderRadius:20}}>
+          <div style={{width:6,height:6,borderRadius:"50%",background:"#1D9E75"}}></div>
+          <span style={{fontSize:12,color:C.greenDark,fontWeight:500}}>{stats.inStock} en stock</span>
+        </div>
+      </div>
 
-        {/* ── Pages ── */}
-        <div style={{ padding:"0 16px 48px" }}>
+      {/* Nav */}
+      <div style={{display:"flex",gap:2,padding:"8px 10px",borderBottom:"0.5px solid "+C.border}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 2px",borderRadius:8,border:"none",background:tab===t.id?C.bgSec:"transparent",color:tab===t.id?C.textPri:C.textTer,fontSize:10,fontWeight:tab===t.id?500:400,cursor:"pointer",fontFamily:"inherit"}}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
 
-          {/* ═══ DASHBOARD ═══ */}
-          {tab === "dashboard" && (
-            items.length === 0 ? (
-              <div style={{ paddingTop:20 }}>
-                <EmptyState
-                  title="Aucun article pour l'instant"
-                  desc="Ajoute ton premier achat pour voir tes gains, ton argent en jeu et tout ton historique."
-                  onAction={() => setTab("stock")}
-                  actionLabel="Ajouter mon premier article →"
-                />
-                <div style={{ marginTop:20, background:C.bgSec, borderRadius:12, padding:"16px 18px" }}>
-                  <p style={{ fontSize:13, fontWeight:500, color:C.textPri, marginBottom:14 }}>Comment ça fonctionne ?</p>
-                  {[
-                    ["1","Tu achètes un article","Ajoute-le dans Articles avec le prix payé et où tu veux le revendre."],
-                    ["2","Tu le revends","Une fois vendu, entre le prix. L'app calcule ton gain automatiquement."],
-                    ["3","Tu suis tes gains","Le tableau te montre ce que tu as gagné, dépensé et ce qui reste en stock."],
-                  ].map(([n,title,desc]) => (
-                    <div key={n} style={{ display:"flex", gap:12, marginBottom:12 }}>
-                      <div style={{ width:24, height:24, borderRadius:"50%", background:C.bgAmber, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:500, color:C.amber }}>{n}</div>
-                      <div>
-                        <p style={{ fontSize:13, fontWeight:500, color:C.textPri, marginBottom:2 }}>{title}</p>
-                        <p style={{ fontSize:12, color:C.textSec, lineHeight:1.5 }}>{desc}</p>
-                      </div>
-                    </div>
-                  ))}
+      <div style={{padding:"0 16px 48px"}}>
+
+        {/* ═══ DASHBOARD ═══ */}
+        {tab==="dashboard"&&(
+          items.length===0?(
+            <div style={{paddingTop:20}}>
+              <EmptyState title="Aucun article pour l'instant" desc="Ajoute ton premier achat pour voir tes gains, ton argent en jeu et tout ton historique." onAction={()=>setTab("stock")} actionLabel="Ajouter mon premier article →"/>
+              <div style={{marginTop:20,background:C.bgSec,borderRadius:12,padding:"16px 18px"}}>
+                <p style={{fontSize:13,fontWeight:500,color:C.textPri,marginBottom:14}}>Comment ça fonctionne ?</p>
+                {[["1","Tu achètes un article","Ajoute-le dans Articles avec le prix payé et où tu veux le revendre."],["2","Tu le revends","Une fois vendu, entre le prix. L'app calcule ton gain automatiquement."],["3","Tu suis tes gains","Le tableau te montre ce que tu as gagné, dépensé et ce qui reste en stock."]].map(([n,title,desc])=>(
+                  <div key={n} style={{display:"flex",gap:12,marginBottom:12}}>
+                    <div style={{width:24,height:24,borderRadius:"50%",background:C.bgAmber,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,fontWeight:500,color:C.amber}}>{n}</div>
+                    <div><p style={{fontSize:13,fontWeight:500,color:C.textPri,marginBottom:2}}>{title}</p><p style={{fontSize:12,color:C.textSec,lineHeight:1.5}}>{desc}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ):(
+            <>
+              <Label>Tes gains</Label>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10}}>
+                <div style={{gridColumn:"span 2",background:C.bgAmber,borderRadius:12,padding:"16px 18px"}}>
+                  <p style={{fontSize:12,fontWeight:500,color:C.amberMid,marginBottom:2}}>Ce que tu as gagné (net)</p>
+                  <p style={{fontSize:28,fontWeight:500,color:stats.profit>=0?C.greenLight:C.red,letterSpacing:"-0.02em",marginBottom:5}}>{eur(stats.profit)}</p>
+                  <p style={{fontSize:12,color:C.amberLight}}>Reventes − prix d'achat · {stats.soldCount} article{stats.soldCount!==1?"s":""} vendu{stats.soldCount!==1?"s":""}</p>
+                </div>
+                <div style={{background:C.bgSec,borderRadius:8,padding:"14px 16px"}}>
+                  <p style={{fontSize:12,color:C.textSec,marginBottom:3}}>Total encaissé</p>
+                  <p style={{fontSize:19,fontWeight:500,color:C.textPri,marginBottom:4}}>{eur(stats.revenue)}</p>
+                  <p style={{fontSize:11,color:C.textTer}}>Somme de toutes tes ventes</p>
+                </div>
+                <div style={{background:C.bgSec,borderRadius:8,padding:"14px 16px"}}>
+                  <p style={{fontSize:12,color:C.textSec,marginBottom:3}}>Total dépensé en achats</p>
+                  <p style={{fontSize:19,fontWeight:500,color:C.textPri,marginBottom:4}}>{eur(stats.totalSpent)}</p>
+                  <p style={{fontSize:11,color:C.textTer}}>Tous articles confondus</p>
                 </div>
               </div>
-            ) : (
-              <>
-                <Label>Tes gains</Label>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(2,minmax(0,1fr))", gap:10 }}>
-                  <div style={{ gridColumn:"span 2", background:C.bgAmber, borderRadius:12, padding:"16px 18px" }}>
-                    <p style={{ fontSize:12, fontWeight:500, color:C.amberMid, marginBottom:2 }}>Ce que tu as gagné (net)</p>
-                    <p style={{ fontSize:28, fontWeight:500, color: stats.profit>=0 ? C.greenLight : C.red, letterSpacing:"-0.02em", marginBottom:5 }}>{eur(stats.profit)}</p>
-                    <p style={{ fontSize:12, color:C.amberLight }}>Reventes − prix d'achat · {stats.soldCount} article{stats.soldCount!==1?"s":""} vendu{stats.soldCount!==1?"s":""}</p>
+              <Label>Argent encore en jeu</Label>
+              <div style={{background:C.bg,border:"0.5px solid "+C.border,borderRadius:12,padding:"14px 18px",marginBottom:4}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:12}}>
+                  <div style={{flex:1}}>
+                    <p style={{fontSize:13,fontWeight:500,color:C.textPri,marginBottom:4}}>Argent bloqué dans ton stock</p>
+                    <p style={{fontSize:12,color:C.textSec,lineHeight:1.55}}>C'est ce que tu as payé pour les {stats.inStock} article{stats.inStock!==1?"s":""} pas encore revendu{stats.inStock!==1?"s":""}. Cet argent te reviendra avec un gain une fois vendus.</p>
                   </div>
-                  <div style={{ background:C.bgSec, borderRadius:8, padding:"14px 16px" }}>
-                    <p style={{ fontSize:12, color:C.textSec, marginBottom:3 }}>Total encaissé</p>
-                    <p style={{ fontSize:19, fontWeight:500, color:C.textPri, marginBottom:4 }}>{eur(stats.revenue)}</p>
-                    <p style={{ fontSize:11, color:C.textTer }}>Somme de toutes tes ventes</p>
-                  </div>
-                  <div style={{ background:C.bgSec, borderRadius:8, padding:"14px 16px" }}>
-                    <p style={{ fontSize:12, color:C.textSec, marginBottom:3 }}>Total dépensé en achats</p>
-                    <p style={{ fontSize:19, fontWeight:500, color:C.textPri, marginBottom:4 }}>{eur(stats.totalSpent)}</p>
-                    <p style={{ fontSize:11, color:C.textTer }}>Tous articles confondus</p>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <p style={{fontSize:22,fontWeight:500,color:C.amber}}>{eur(stats.invested)}</p>
+                    <p style={{fontSize:11,color:C.amberLight,marginTop:3}}>à récupérer</p>
                   </div>
                 </div>
-
-                <Label>Argent encore en jeu</Label>
-                <div style={{ background:C.bg, border:"0.5px solid "+C.border, borderRadius:12, padding:"14px 18px", marginBottom:4 }}>
-                  <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:12 }}>
-                    <div style={{ flex:1 }}>
-                      <p style={{ fontSize:13, fontWeight:500, color:C.textPri, marginBottom:4 }}>Argent bloqué dans ton stock</p>
-                      <p style={{ fontSize:12, color:C.textSec, lineHeight:1.55 }}>
-                        C'est ce que tu as payé pour les {stats.inStock} article{stats.inStock!==1?"s":""} pas encore revendu{stats.inStock!==1?"s":""}. Cet argent te reviendra avec un gain une fois vendus.
-                      </p>
+                <div style={{borderTop:"0.5px solid "+C.border,paddingTop:10}}>
+                  <Btn full onClick={()=>setTab("stock")}>Voir les articles en stock →</Btn>
+                </div>
+              </div>
+              <Label>Dernières transactions</Label>
+              {[...items].reverse().slice(0,5).map((item,i,arr)=>{
+                const profit=item.sellPrice!=null?item.sellPrice-item.buyPrice:null;
+                return(
+                  <div key={item.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:i<arr.length-1?"0.5px solid "+C.border:"none"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{fontSize:14,fontWeight:500,color:C.textPri,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:3}}>{item.name}</p>
+                      <p style={{fontSize:12,color:C.textSec}}>{item.category} · {item.date}</p>
                     </div>
-                    <div style={{ textAlign:"right", flexShrink:0 }}>
-                      <p style={{ fontSize:22, fontWeight:500, color:C.amber }}>{eur(stats.invested)}</p>
-                      <p style={{ fontSize:11, color:C.amberLight, marginTop:3 }}>à récupérer</p>
-                    </div>
-                  </div>
-                  <div style={{ borderTop:"0.5px solid "+C.border, paddingTop:10 }}>
-                    <Btn full onClick={() => setTab("stock")}>Voir les articles en stock →</Btn>
-                  </div>
-                </div>
-
-                <Label>Dernières transactions</Label>
-                {[...items].reverse().slice(0,5).map((item,i,arr) => {
-                  const profit = item.sellPrice != null ? item.sellPrice - item.buyPrice : null;
-                  return (
-                    <div key={item.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 0", borderBottom: i<arr.length-1 ? "0.5px solid "+C.border : "none" }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:14, fontWeight:500, color:C.textPri, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginBottom:3 }}>{item.name}</p>
-                        <p style={{ fontSize:12, color:C.textSec }}>{item.category} · {item.date}</p>
-                      </div>
-                      <div style={{ textAlign:"right", flexShrink:0 }}>
-                        {profit != null
-                          ? <p style={{ fontSize:14, fontWeight:500, color: profit>=0 ? C.green : C.red, marginBottom:4 }}>Gain : {profit>=0?"+":""}{eur(profit)}</p>
-                          : <p style={{ fontSize:14, fontWeight:500, color:C.amberMid, marginBottom:4 }}>Investi : {eur(item.buyPrice)}</p>
-                        }
-                        <Badge variant={item.status}>{item.status==="vendu"?"vendu":"en stock"}</Badge>
-                      </div>
-                    </div>
-                  );
-                })}
-              </>
-            )
-          )}
-
-          {/* ═══ STOCK ═══ */}
-          {tab === "stock" && (
-            <>
-              <Label action={
-                <Btn onClick={() => { setShowAdd(v => !v); setSellTarget(null); setDeleteConfirm(null); }}>
-                  {showAdd ? "Annuler" : "+ Ajouter un achat"}
-                </Btn>
-              }>
-                {items.length} article{items.length!==1?"s":""}
-              </Label>
-
-              {/* Formulaire ajout */}
-              {showAdd && (
-                <div style={{ background:C.bgSec, borderRadius:12, padding:16, marginBottom:12, border:"0.5px solid "+C.borderMed }}>
-                  <p style={{ fontSize:14, fontWeight:500, color:C.textPri, marginBottom:4 }}>Nouvel article acheté</p>
-                  <p style={{ fontSize:12, color:C.textSec, marginBottom:14 }}>Renseigne ce que tu viens d'acheter pour le revendre.</p>
-                  <Field label="Nom du produit">
-                    <input style={inp} placeholder="Ex: iPhone 14 Pro 128Go" value={form.name} onChange={e => setForm(p => ({...p, name:e.target.value}))} />
-                  </Field>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                    <Field label="Catégorie">
-                      <select style={sel} value={form.category} onChange={e => setForm(p => ({...p, category:e.target.value}))}>
-                        {CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
-                      </select>
-                    </Field>
-                    <Field label="Plateforme de revente">
-                      <select style={sel} value={form.platform} onChange={e => setForm(p => ({...p, platform:e.target.value}))}>
-                        {PLATFORMS_LIST.map(pl => <option key={pl}>{pl}</option>)}
-                      </select>
-                    </Field>
-                  </div>
-                  <Field label="Prix que tu as payé (€)">
-                    <input style={inp} type="number" min="0" placeholder="Ex: 120" value={form.buyPrice} onChange={e => setForm(p => ({...p, buyPrice:e.target.value}))} />
-                  </Field>
-                  <Btn full onClick={addItem} x={{ marginTop:4 }}>Enregistrer l'article</Btn>
-                </div>
-              )}
-
-              {/* Modal vente */}
-              {sellTarget && (
-                <div style={{ background:C.bg, border:"1.5px solid #378ADD", borderRadius:12, padding:16, marginBottom:12 }}>
-                  <p style={{ fontSize:14, fontWeight:500, color:C.textPri, marginBottom:3 }}>Pour combien tu l'as vendu ?</p>
-                  <p style={{ fontSize:13, color:C.textSec, marginBottom:12 }}>
-                    {items.find(i => i.id===sellTarget)?.name} · acheté {eur(items.find(i => i.id===sellTarget)?.buyPrice)}
-                  </p>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <input style={{ ...inp, flex:1 }} type="number" min="0" placeholder="Ex: 180" value={sellPrice} onChange={e => setSellPrice(e.target.value)} autoFocus />
-                    <Btn onClick={confirmSell}>Confirmer la vente</Btn>
-                    <Btn onClick={() => { setSellTarget(null); setSellPrice(""); }}>✕</Btn>
-                  </div>
-                </div>
-              )}
-
-              {/* Modal suppression */}
-              {deleteConfirm && (
-                <div style={{ background:C.bgRed, border:"1.5px solid "+C.red, borderRadius:12, padding:16, marginBottom:12 }}>
-                  <p style={{ fontSize:14, fontWeight:500, color:C.red, marginBottom:4 }}>Supprimer cet article ?</p>
-                  <p style={{ fontSize:13, color:C.red, marginBottom:12, opacity:0.8 }}>
-                    {items.find(i => i.id===deleteConfirm)?.name} — cette action est irréversible.
-                  </p>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <Btn danger full onClick={() => deleteItem(deleteConfirm)}>Oui, supprimer</Btn>
-                    <Btn onClick={() => setDeleteConfirm(null)}>Annuler</Btn>
-                  </div>
-                </div>
-              )}
-
-              {items.length === 0 && !showAdd && (
-                <EmptyState
-                  title="Aucun article pour l'instant"
-                  desc='Clique sur "+ Ajouter un achat" pour enregistrer ton premier article.'
-                  onAction={() => setShowAdd(true)}
-                  actionLabel="+ Ajouter un achat"
-                />
-              )}
-
-              {/* Liste articles */}
-              {[...items].reverse().map(item => {
-                const profit = item.sellPrice != null ? item.sellPrice - item.buyPrice : null;
-                return (
-                  <div key={item.id} style={{ background:C.bg, border:"0.5px solid "+C.border, borderRadius:12, padding:"14px 16px", marginBottom:8 }}>
-                    <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
-                      <div style={{ width:36, height:36, borderRadius:8, background:C.bgSec, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="#aaa" strokeWidth="1.2" fill="none"/><path d="M4.5 8h7M8 4.5v7" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontWeight:500, fontSize:14, color:C.textPri, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginBottom:3 }}>{item.name}</p>
-                        <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
-                          <span style={{ fontSize:12, color:C.textSec }}>{item.category}</span>
-                          <span style={{ color:C.textTer, fontSize:12 }}>·</span>
-                          <span style={{ fontSize:12, color:C.textSec }}>{item.platform}</span>
-                          <span style={{ color:C.textTer, fontSize:12 }}>·</span>
-                          <span style={{ fontSize:12, color:C.textTer }}>{item.date}</span>
-                        </div>
-                      </div>
-                      <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-                        <Badge variant={item.status}>{item.status==="vendu"?"vendu":"en stock"}</Badge>
-                        <button
-                          onClick={() => { setDeleteConfirm(item.id); setSellTarget(null); setShowAdd(false); }}
-                          title="Supprimer"
-                          style={{ width:28, height:28, borderRadius:6, border:"0.5px solid "+C.border, background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}
-                        >
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a.5.5 0 00.5.5h5a.5.5 0 00.5-.5l.5-7" stroke="#999" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div style={{ display:"flex", alignItems:"center", marginTop:12, paddingTop:10, borderTop:"0.5px solid "+C.border, gap:8, flexWrap:"wrap" }}>
-                      <span style={{ fontSize:13, color:C.textSec, flex:1, minWidth:0 }}>
-                        Acheté <span style={{ fontWeight:500, color:C.textPri }}>{eur(item.buyPrice)}</span>
-                        {item.sellPrice != null && <> → Vendu <span style={{ fontWeight:500, color:C.textPri }}>{eur(item.sellPrice)}</span></>}
-                      </span>
-                      {profit != null && (
-                        <span style={{ fontSize:14, fontWeight:500, color: profit>=0 ? C.green : C.red }}>
-                          Gain : {profit>=0?"+":""}{eur(profit)}
-                        </span>
-                      )}
-                      {item.status === "stock" && (
-                        <Btn small onClick={() => { setSellTarget(item.id); setSellPrice(""); setShowAdd(false); setDeleteConfirm(null); }}>
-                          J'ai vendu cet article
-                        </Btn>
-                      )}
+                    <div style={{textAlign:"right",flexShrink:0}}>
+                      {profit!=null?<p style={{fontSize:14,fontWeight:500,color:profit>=0?C.green:C.red,marginBottom:4}}>Gain : {profit>=0?"+":""}{eur(profit)}</p>:<p style={{fontSize:14,fontWeight:500,color:C.amberMid,marginBottom:4}}>Investi : {eur(item.buyPrice)}</p>}
+                      <Badge variant={item.status}>{item.status==="vendu"?"vendu":"en stock"}</Badge>
                     </div>
                   </div>
                 );
               })}
             </>
-          )}
+          )
+        )}
 
-          {/* ═══ ESTIMATEUR ═══ */}
-          {tab === "estimateur" && (
-            <>
-              <Label>Analyse IA — combien puis-je revendre ?</Label>
-              <div style={{ background:C.bgSec, borderRadius:12, padding:16, marginBottom:4 }}>
-                <p style={{ fontSize:13, color:C.textSec, lineHeight:1.6, marginBottom:14 }}>
-                  Entre un produit et son prix d'achat. L'IA analyse le marché et te dit à quel prix le revendre pour maximiser ton gain.
-                </p>
-                <Field label="Nom du produit">
-                  <input style={inp} placeholder="Ex: Samsung Galaxy S24 Ultra 256Go" value={estForm.name} onChange={e => setEstForm(p => ({...p, name:e.target.value}))} />
-                </Field>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                  <Field label="Catégorie">
-                    <select style={sel} value={estForm.category} onChange={e => setEstForm(p => ({...p, category:e.target.value}))}>
-                      {CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
-                    </select>
-                  </Field>
-                  <Field label="Prix d'achat (€)">
-                    <input style={inp} type="number" min="0" placeholder="Ex: 200" value={estForm.buyPrice} onChange={e => setEstForm(p => ({...p, buyPrice:e.target.value}))} />
-                  </Field>
+        {/* ═══ STOCK ═══ */}
+        {tab==="stock"&&(
+          <>
+            <Label action={<Btn onClick={()=>{setShowAdd(v=>!v);setSellTarget(null);setDeleteConfirm(null);}}>{showAdd?"Annuler":"+ Ajouter un achat"}</Btn>}>
+              {items.length} article{items.length!==1?"s":""}
+            </Label>
+
+            {showAdd&&(
+              <div style={{background:C.bgSec,borderRadius:12,padding:16,marginBottom:12,border:"0.5px solid rgba(0,0,0,0.18)"}}>
+                <p style={{fontSize:14,fontWeight:500,color:C.textPri,marginBottom:4}}>Nouvel article acheté</p>
+                <p style={{fontSize:12,color:C.textSec,marginBottom:14}}>Renseigne ce que tu viens d'acheter pour le revendre.</p>
+                <Field label="Nom du produit"><input style={inp} placeholder="Ex: iPhone 14 Pro 128Go" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></Field>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <Field label="Catégorie"><select style={sel} value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></Field>
+                  <Field label="Plateforme de revente"><select style={sel} value={form.platform} onChange={e=>setForm(p=>({...p,platform:e.target.value}))}>{PLATFORMS_LIST.map(p=><option key={p}>{p}</option>)}</select></Field>
                 </div>
-                <Btn full disabled={estLoading || !estForm.name || !estForm.buyPrice} onClick={runEstimator} x={{ marginTop:4 }}>
-                  {estLoading ? "Analyse en cours…" : "Analyser avec l'IA ↗"}
-                </Btn>
+                <Field label="Prix que tu as payé (€)"><input style={inp} type="number" min="0" placeholder="Ex: 120" value={form.buyPrice} onChange={e=>setForm(p=>({...p,buyPrice:e.target.value}))}/></Field>
+                <Btn full onClick={addItem} style={{marginTop:4}}>Enregistrer l'article</Btn>
               </div>
+            )}
 
-              {estResult && !estResult.error && (
-                <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:16 }}>
-                  <div style={{ background:C.bgGreen, borderRadius:12, padding:18 }}>
-                    <p style={{ fontSize:12, fontWeight:500, color:C.green, marginBottom:4 }}>Prix de revente conseillé</p>
-                    <p style={{ fontSize:26, fontWeight:500, color:C.greenDark, letterSpacing:"-0.02em", marginBottom:6 }}>{eur(estResult.prix_bas)} – {eur(estResult.prix_haut)}</p>
-                    <p style={{ fontSize:12, color:C.green }}>Fourchette idéale pour vendre vite avec un bon bénéfice.</p>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                    <div style={{ background:C.bgSec, borderRadius:8, padding:"14px 16px" }}>
-                      <p style={{ fontSize:12, color:C.textSec, marginBottom:3 }}>Gain estimé</p>
-                      <p style={{ fontSize:20, fontWeight:500, color: estResult.marge>=0 ? C.greenLight : C.red, marginBottom:4 }}>{estResult.marge>=0?"+":""}{eur(estResult.marge)}</p>
-                      <p style={{ fontSize:11, color:C.textTer }}>après frais de plateforme</p>
-                    </div>
-                    <div style={{ background:C.bgAmber, borderRadius:8, padding:"14px 16px" }}>
-                      <p style={{ fontSize:12, color:C.amberMid, marginBottom:3 }}>Prix d'achat maximum</p>
-                      <p style={{ fontSize:20, fontWeight:500, color:C.amber, marginBottom:4 }}>{eur(estResult.achat_max)}</p>
-                      <p style={{ fontSize:11, color:C.amberLight }}>pour rester rentable</p>
-                    </div>
-                  </div>
-                  <div style={{ background:C.bg, border:"0.5px solid "+C.border, borderRadius:12, padding:"14px 16px" }}>
-                    <p style={{ fontSize:12, color:C.textSec, marginBottom:6 }}>Meilleure plateforme pour vendre</p>
-                    <Badge variant="info">{estResult.plateforme}</Badge>
-                    <p style={{ fontSize:13, color:C.textSec, lineHeight:1.6, marginTop:10 }}>{estResult.conseil}</p>
+            {sellTarget&&(()=>{
+              const item=items.find(i=>i.id===sellTarget);
+              return item?(
+                <div style={{background:C.bg,border:"1.5px solid #378ADD",borderRadius:12,padding:16,marginBottom:12}}>
+                  <p style={{fontSize:14,fontWeight:500,color:C.textPri,marginBottom:3}}>Pour combien tu l'as vendu ?</p>
+                  <p style={{fontSize:13,color:C.textSec,marginBottom:12}}>{item.name} · acheté {eur(item.buyPrice)}</p>
+                  <div style={{display:"flex",gap:8}}>
+                    <input style={{...inp,flex:1}} type="number" min="0" placeholder="Ex: 180" value={sellPrice} onChange={e=>setSellPrice(e.target.value)} autoFocus/>
+                    <Btn onClick={confirmSell}>Confirmer la vente</Btn>
+                    <Btn onClick={()=>{setSellTarget(null);setSellPrice("");}}>✕</Btn>
                   </div>
                 </div>
-              )}
-              {estResult?.error && (
-                <div style={{ background:C.bgRed, borderRadius:8, padding:"12px 16px", marginTop:12 }}>
-                  <p style={{ fontSize:14, color:C.red, marginBottom:4 }}>Une erreur est survenue lors de l'analyse.</p>
-                  {estResult.msg && <p style={{ fontSize:12, color:C.red, opacity:0.7 }}>{estResult.msg}</p>}
+              ):null;
+            })()}
+
+            {deleteConfirm&&(()=>{
+              const item=items.find(i=>i.id===deleteConfirm);
+              return item?(
+                <div style={{background:C.bgRed,border:"1.5px solid "+C.red,borderRadius:12,padding:16,marginBottom:12}}>
+                  <p style={{fontSize:14,fontWeight:500,color:C.red,marginBottom:4}}>Supprimer cet article ?</p>
+                  <p style={{fontSize:13,color:C.red,marginBottom:12,opacity:0.8}}>{item.name} — cette action est irréversible.</p>
+                  <div style={{display:"flex",gap:8}}>
+                    <Btn danger full onClick={()=>deleteItem(deleteConfirm)}>Oui, supprimer</Btn>
+                    <Btn onClick={()=>setDeleteConfirm(null)}>Annuler</Btn>
+                  </div>
                 </div>
-              )}
-            </>
-          )}
+              ):null;
+            })()}
 
-          {/* ═══ PLATEFORMES ═══ */}
-          {tab === "plateformes" && (
-            <>
-              <Label>Sites de revente</Label>
-              <p style={{ fontSize:13, color:C.textSec, lineHeight:1.6, marginBottom:14 }}>
-                Toutes les plateformes sur lesquelles tu peux vendre. Filtre par catégorie pour voir les plus adaptées.
-              </p>
+            {items.length===0&&!showAdd&&<EmptyState title="Aucun article pour l'instant" desc='Clique sur "+ Ajouter un achat" pour enregistrer ton premier article.' onAction={()=>setShowAdd(true)} actionLabel="+ Ajouter un achat"/>}
 
-              {/* Filtres */}
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
-                {siteCats.map(cat => (
-                  <button key={cat} onClick={() => setSiteFilter(cat)} style={{ fontSize:12, padding:"5px 12px", borderRadius:20, border: siteFilter===cat ? "1.5px solid #378ADD" : "0.5px solid "+C.border, background: siteFilter===cat ? C.bgBlue : "transparent", color: siteFilter===cat ? C.blue : C.textSec, fontWeight: siteFilter===cat ? 500 : 400, cursor:"pointer", fontFamily:"inherit" }}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {/* Cards plateformes */}
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                {filteredSites.map(site => (
-                  <div key={site.name} style={{ background:C.bg, border:"0.5px solid "+C.border, borderRadius:12, overflow:"hidden" }}>
-                    {/* Bande couleur en haut */}
-                    <div style={{ height:4, background:site.color }} />
-                    <div style={{ padding:"14px 16px" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                        <div style={{ width:36, height:36, borderRadius:8, background:site.color, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#fff" strokeWidth="1.3"/><path d="M8 2.5C6.3 2.5 5 5 5 8s1.3 5.5 3 5.5S11 11 11 8s-1.3-5.5-3-5.5z" stroke="#fff" strokeWidth="1.3"/><path d="M2.5 8h11" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                        </div>
-                        <div style={{ flex:1 }}>
-                          <p style={{ fontSize:15, fontWeight:500, color:C.textPri, marginBottom:2 }}>{site.name}</p>
-                          <span style={{ fontSize:12, fontWeight:500, color: site.fee===0 ? C.green : C.amberMid }}>
-                            {site.fee===0 ? "Gratuit — 0% de frais" : `${site.fee}% de frais vendeur`}
-                          </span>
-                        </div>
-                        <a
-                          href={site.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ fontSize:12, padding:"6px 14px", borderRadius:8, border:"0.5px solid "+C.borderMed, background:"transparent", color:C.textPri, textDecoration:"none", whiteSpace:"nowrap", fontFamily:"inherit" }}
-                        >
-                          Ouvrir →
-                        </a>
-                      </div>
-
-                      <p style={{ fontSize:13, color:C.textSec, lineHeight:1.55, marginBottom:10 }}>{site.desc}</p>
-
-                      {/* Catégories recommandées */}
-                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:10 }}>
-                        <span style={{ fontSize:11, color:C.textTer }}>Idéal pour :</span>
-                        {site.cats.map(cat => (
-                          <span key={cat} style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:C.bgSec, color:C.textSec }}>{cat}</span>
-                        ))}
-                      </div>
-
-                      {/* Astuce */}
-                      <div style={{ background:C.bgAmber, borderRadius:8, padding:"8px 12px", display:"flex", gap:8, alignItems:"flex-start" }}>
-                        <span style={{ fontSize:13, flexShrink:0 }}>💡</span>
-                        <p style={{ fontSize:12, color:C.amberMid, lineHeight:1.5 }}>{site.tip}</p>
+            {[...items].reverse().map(item=>{
+              const profit=item.sellPrice!=null?item.sellPrice-item.buyPrice:null;
+              return(
+                <div key={item.id} style={{background:C.bg,border:"0.5px solid "+C.border,borderRadius:12,padding:"14px 16px",marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                    <div style={{width:36,height:36,borderRadius:8,background:C.bgSec,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="#bbb" strokeWidth="1.2" fill="none"/><path d="M4.5 8h7M8 4.5v7" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{fontWeight:500,fontSize:14,color:C.textPri,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:3}}>{item.name}</p>
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+                        <span style={{fontSize:12,color:C.textSec}}>{item.category}</span>
+                        <span style={{fontSize:12,color:C.textTer}}>·</span>
+                        <span style={{fontSize:12,color:C.textSec}}>{item.platform}</span>
+                        <span style={{fontSize:12,color:C.textTer}}>·</span>
+                        <span style={{fontSize:12,color:C.textTer}}>{item.date}</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ═══ GUIDE ═══ */}
-          {tab === "guide" && (
-            <>
-              <Label>Où vendre selon ce que tu as</Label>
-              <p style={{ fontSize:13, color:C.textSec, lineHeight:1.6, marginBottom:14 }}>
-                Choisis une catégorie pour voir les meilleures plateformes et leurs frais.
-              </p>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
-                {CATEGORIES.map(cat => (
-                  <button key={cat} onClick={() => setGuideCat(cat)} style={{ fontSize:12, padding:"5px 12px", borderRadius:20, border: guideCat===cat ? "1.5px solid #378ADD" : "0.5px solid "+C.border, background: guideCat===cat ? C.bgBlue : "transparent", color: guideCat===cat ? C.blue : C.textSec, fontWeight: guideCat===cat ? 500 : 400, cursor:"pointer", fontFamily:"inherit" }}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:24 }}>
-                {(GUIDE[guideCat]||[]).map((p) => (
-                  <div key={p.n} style={{ background:C.bg, border: p.best ? "1.5px solid #1D9E75" : "0.5px solid "+C.border, borderRadius:12, padding:"14px 16px" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                      {p.best && <Badge variant="vendu">meilleur choix</Badge>}
-                      <span style={{ fontWeight:500, fontSize:15, color:C.textPri }}>{p.n}</span>
-                      <span style={{ marginLeft:"auto", fontSize:13, fontWeight:500, color: p.f===0 ? C.green : C.amberMid }}>
-                        {p.f===0 ? "Gratuit" : `${p.f}% de frais`}
-                      </span>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                      <Badge variant={item.status}>{item.status==="vendu"?"vendu":"en stock"}</Badge>
+                      <button onClick={()=>{setDeleteConfirm(item.id);setSellTarget(null);setShowAdd(false);}} title="Supprimer" style={{width:28,height:28,borderRadius:6,border:"0.5px solid "+C.border,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a.5.5 0 00.5.5h5a.5.5 0 00.5-.5l.5-7" stroke="#999" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
                     </div>
-                    <p style={{ fontSize:13, color:C.textSec, lineHeight:1.55 }}>{p.t}</p>
                   </div>
-                ))}
-              </div>
-
-              <Label>Ce que chaque plateforme te prend</Label>
-              <p style={{ fontSize:13, color:C.textSec, marginBottom:10, lineHeight:1.5 }}>
-                Ces frais sont déduits de ton prix de vente. 0% = tu gardes 100% de la vente.
-              </p>
-              <div style={{ background:C.bgSec, borderRadius:12, padding:"4px 16px", marginBottom:8 }}>
-                {Object.entries(FEES).map(([name,fee],i,arr) => (
-                  <div key={name} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 0", borderBottom: i<arr.length-1 ? "0.5px solid "+C.border : "none" }}>
-                    <span style={{ fontSize:14, color:C.textPri }}>{name}</span>
-                    <span style={{ fontSize:13, fontWeight:500, color: fee===0 ? C.green : C.textSec }}>
-                      {fee===0 ? "Gratuit — tu gardes tout" : `${fee}% prélevé sur la vente`}
+                  <div style={{display:"flex",alignItems:"center",marginTop:12,paddingTop:10,borderTop:"0.5px solid "+C.border,gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:13,color:C.textSec,flex:1,minWidth:0}}>
+                      Acheté <span style={{fontWeight:500,color:C.textPri}}>{eur(item.buyPrice)}</span>
+                      {item.sellPrice!=null&&<> → Vendu <span style={{fontWeight:500,color:C.textPri}}>{eur(item.sellPrice)}</span></>}
                     </span>
+                    {profit!=null&&<span style={{fontSize:14,fontWeight:500,color:profit>=0?C.green:C.red}}>Gain : {profit>=0?"+":""}{eur(profit)}</span>}
+                    {item.status==="stock"&&<Btn small onClick={()=>{setSellTarget(item.id);setSellPrice("");setShowAdd(false);setDeleteConfirm(null);}}>J'ai vendu cet article</Btn>}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
+                </div>
+              );
+            })}
+          </>
+        )}
 
-        </div>
+        {/* ═══ ESTIMATEUR ═══ */}
+        {tab==="estimateur"&&(
+          <>
+            <Label>Analyse IA — combien puis-je revendre ?</Label>
+            <div style={{background:C.bgSec,borderRadius:12,padding:16,marginBottom:4}}>
+              <p style={{fontSize:13,color:C.textSec,lineHeight:1.6,marginBottom:14}}>Entre un produit et son prix d'achat. L'IA analyse le marché et te dit à quel prix le revendre pour maximiser ton gain.</p>
+              <Field label="Nom du produit"><input style={inp} placeholder="Ex: Samsung Galaxy S24 Ultra 256Go" value={estForm.name} onChange={e=>setEstForm(p=>({...p,name:e.target.value}))}/></Field>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <Field label="Catégorie"><select style={sel} value={estForm.category} onChange={e=>setEstForm(p=>({...p,category:e.target.value}))}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></Field>
+                <Field label="Prix d'achat (€)"><input style={inp} type="number" min="0" placeholder="Ex: 200" value={estForm.buyPrice} onChange={e=>setEstForm(p=>({...p,buyPrice:e.target.value}))}/></Field>
+              </div>
+              <Btn full disabled={estLoading||!estForm.name||!estForm.buyPrice} onClick={runEstimator} style={{marginTop:4}}>
+                {estLoading?"Analyse en cours…":"Analyser avec l'IA ↗"}
+              </Btn>
+            </div>
+            {estResult&&!estResult.error&&(
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:16}}>
+                <div style={{background:C.bgGreen,borderRadius:12,padding:18}}>
+                  <p style={{fontSize:12,fontWeight:500,color:C.green,marginBottom:4}}>Prix de revente conseillé</p>
+                  <p style={{fontSize:26,fontWeight:500,color:C.greenDark,letterSpacing:"-0.02em",marginBottom:6}}>{eur(estResult.prix_bas)} – {eur(estResult.prix_haut)}</p>
+                  <p style={{fontSize:12,color:C.green}}>Fourchette idéale pour vendre vite avec un bon bénéfice.</p>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  <div style={{background:C.bgSec,borderRadius:8,padding:"14px 16px"}}>
+                    <p style={{fontSize:12,color:C.textSec,marginBottom:3}}>Gain estimé</p>
+                    <p style={{fontSize:20,fontWeight:500,color:estResult.marge>=0?C.greenLight:C.red,marginBottom:4}}>{estResult.marge>=0?"+":""}{eur(estResult.marge)}</p>
+                    <p style={{fontSize:11,color:C.textTer}}>après frais de plateforme</p>
+                  </div>
+                  <div style={{background:C.bgAmber,borderRadius:8,padding:"14px 16px"}}>
+                    <p style={{fontSize:12,color:C.amberMid,marginBottom:3}}>Prix d'achat maximum</p>
+                    <p style={{fontSize:20,fontWeight:500,color:C.amber,marginBottom:4}}>{eur(estResult.achat_max)}</p>
+                    <p style={{fontSize:11,color:C.amberLight}}>pour rester rentable</p>
+                  </div>
+                </div>
+                <div style={{background:C.bg,border:"0.5px solid "+C.border,borderRadius:12,padding:"14px 16px"}}>
+                  <p style={{fontSize:12,color:C.textSec,marginBottom:6}}>Meilleure plateforme pour vendre</p>
+                  <Badge variant="info">{estResult.plateforme}</Badge>
+                  <p style={{fontSize:13,color:C.textSec,lineHeight:1.6,marginTop:10}}>{estResult.conseil}</p>
+                </div>
+              </div>
+            )}
+            {estResult?.error&&(
+              <div style={{background:C.bgRed,borderRadius:8,padding:"12px 16px",marginTop:12}}>
+                <p style={{fontSize:14,color:C.red,marginBottom:4}}>Une erreur est survenue lors de l'analyse.</p>
+                {estResult.msg&&<p style={{fontSize:12,color:C.red,opacity:0.7}}>{estResult.msg}</p>}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ═══ PLATEFORMES ═══ */}
+        {tab==="plateformes"&&(
+          <>
+            <Label>Sites de revente</Label>
+            <p style={{fontSize:13,color:C.textSec,lineHeight:1.6,marginBottom:14}}>Toutes les plateformes pour vendre. Filtre par catégorie pour voir les plus adaptées à ce que tu as.</p>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+              {siteCats.map(cat=>(
+                <button key={cat} onClick={()=>setSiteFilter(cat)} style={{fontSize:12,padding:"5px 12px",borderRadius:20,border:siteFilter===cat?"1.5px solid #378ADD":"0.5px solid "+C.border,background:siteFilter===cat?C.bgBlue:"transparent",color:siteFilter===cat?C.blue:C.textSec,fontWeight:siteFilter===cat?500:400,cursor:"pointer",fontFamily:"inherit"}}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {filteredSites.map(site=>(
+                <div key={site.name} style={{background:C.bg,border:"0.5px solid "+C.border,borderRadius:12,overflow:"hidden"}}>
+                  <div style={{height:4,background:site.color}}/>
+                  <div style={{padding:"14px 16px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                      <div style={{width:36,height:36,borderRadius:8,background:site.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#fff" strokeWidth="1.3"/><path d="M8 2.5C6.3 2.5 5 5 5 8s1.3 5.5 3 5.5S11 11 11 8 9.7 2.5 8 2.5z" stroke="#fff" strokeWidth="1.3"/><path d="M2.5 8h11" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                      </div>
+                      <div style={{flex:1}}>
+                        <p style={{fontSize:15,fontWeight:500,color:C.textPri,marginBottom:2}}>{site.name}</p>
+                        <span style={{fontSize:12,fontWeight:500,color:site.fee===0?C.green:C.amberMid}}>{site.fee===0?"Gratuit — 0% de frais":`${site.fee}% de frais vendeur`}</span>
+                      </div>
+                      <a href={site.url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.18)",color:C.textPri,whiteSpace:"nowrap",display:"inline-block"}}>
+                        Ouvrir →
+                      </a>
+                    </div>
+                    <p style={{fontSize:13,color:C.textSec,lineHeight:1.55,marginBottom:10}}>{site.desc}</p>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:10}}>
+                      <span style={{fontSize:11,color:C.textTer}}>Idéal pour :</span>
+                      {site.cats.map(cat=><span key={cat} style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:C.bgSec,color:C.textSec}}>{cat}</span>)}
+                    </div>
+                    <div style={{background:C.bgAmber,borderRadius:8,padding:"8px 12px",display:"flex",gap:8,alignItems:"flex-start"}}>
+                      <span style={{fontSize:13,flexShrink:0}}>💡</span>
+                      <p style={{fontSize:12,color:C.amberMid,lineHeight:1.5}}>{site.tip}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ═══ GUIDE ═══ */}
+        {tab==="guide"&&(
+          <>
+            <Label>Où vendre selon ce que tu as</Label>
+            <p style={{fontSize:13,color:C.textSec,lineHeight:1.6,marginBottom:14}}>Choisis une catégorie pour voir les meilleures plateformes et leurs frais.</p>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+              {CATEGORIES.map(cat=>(
+                <button key={cat} onClick={()=>setGuideCat(cat)} style={{fontSize:12,padding:"5px 12px",borderRadius:20,border:guideCat===cat?"1.5px solid #378ADD":"0.5px solid "+C.border,background:guideCat===cat?C.bgBlue:"transparent",color:guideCat===cat?C.blue:C.textSec,fontWeight:guideCat===cat?500:400,cursor:"pointer",fontFamily:"inherit"}}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+              {(GUIDE[guideCat]||[]).map(p=>(
+                <div key={p.n} style={{background:C.bg,border:p.best?"1.5px solid #1D9E75":"0.5px solid "+C.border,borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                    {p.best&&<Badge variant="vendu">meilleur choix</Badge>}
+                    <span style={{fontWeight:500,fontSize:15,color:C.textPri}}>{p.n}</span>
+                    <span style={{marginLeft:"auto",fontSize:13,fontWeight:500,color:p.f===0?C.green:C.amberMid}}>{p.f===0?"Gratuit":`${p.f}% de frais`}</span>
+                  </div>
+                  <p style={{fontSize:13,color:C.textSec,lineHeight:1.55}}>{p.t}</p>
+                </div>
+              ))}
+            </div>
+            <Label>Ce que chaque plateforme te prend</Label>
+            <p style={{fontSize:13,color:C.textSec,marginBottom:10,lineHeight:1.5}}>Ces frais sont déduits de ton prix de vente. 0% = tu gardes 100% de la vente.</p>
+            <div style={{background:C.bgSec,borderRadius:12,padding:"4px 16px",marginBottom:8}}>
+              {Object.entries(FEES).map(([name,fee],i,arr)=>(
+                <div key={name} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 0",borderBottom:i<arr.length-1?"0.5px solid "+C.border:"none"}}>
+                  <span style={{fontSize:14,color:C.textPri}}>{name}</span>
+                  <span style={{fontSize:13,fontWeight:500,color:fee===0?C.green:C.textSec}}>{fee===0?"Gratuit — tu gardes tout":`${fee}% prélevé sur la vente`}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
       </div>
+    </div>
     </div>
   );
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
